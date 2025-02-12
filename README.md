@@ -1,6 +1,6 @@
 # push_swap_tester
 
-A simple Bash and Python tester for **42’s push_swap** project.
+A simple Push Swap Tester for **42’s push_swap** project.
 
 ### Features:
 - ✅ **Checks for memory leaks** using **Valgrind**
