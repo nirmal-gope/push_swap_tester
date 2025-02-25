@@ -106,7 +106,10 @@ Test specific inputs with the visualizer:
 ```bash
 ./visualizer.py 5 4 3 2 1
 ```
-
+Custom Delay:
+```bash
+./visualizer.py --delay 0.5 5 4 3 2 1
+```
 ---
 
 ## 📊 Output & Logs
