@@ -45,7 +45,7 @@ elif ! touch "$LOG_FILE" 2>/dev/null; then
 fi
 > "$LOG_FILE"
 
-log_echo "${GREEN}Starting tests...${RESET}"
+log_echo "${GREEN}Starting...${RESET}"
 
 BANNER="
 ${CYAN}
@@ -456,11 +456,11 @@ log_echo "Test Summary:"
 log_echo "Total Failed Tests: $FAILED_TESTS"
 if [ ${#OP_COUNTS_100[@]} -gt 0 ]; then
     avg_100=$(calculate_average "${OP_COUNTS_100[@]}")
-    log_echo "Average Operations (Test100): $avg_100"
+    log_echo "Number of Operations (Test100): $avg_100"
 fi
 if [ ${#OP_COUNTS_500[@]} -gt 0 ]; then
     avg_500=$(calculate_average "${OP_COUNTS_500[@]}")
-    log_echo "Average Operations (Test500): $avg_500"
+    log_echo "Number of Operations (Test500): $avg_500"
 fi
 if [ "$FAILED_TESTS" -gt 0 ]; then
     log_echo "${RED}❌ Check logs:${RESET}"
