@@ -1,10 +1,10 @@
 # Push Swap Tester
 
-A robust and user-friendly tester for **42’s `push_swap` project**, designed to validate sorting algorithms efficiently.
+A robust and user-friendly tester for **42’s `Push Swap` project**, designed to validate sorting algorithms efficiently.
 
 ## Overview
 
-This tool automates testing for the `push_swap` project, ensuring your program meets 42’s requirements for correctness, efficiency, and error handling. It integrates memory leak detection, operation count validation, and visual debugging, all while generating detailed logs for analysis.
+This tool automates testing for the `Push Swap` project, ensuring your program meets 42’s requirements for correctness, efficiency, and error handling. It integrates memory leak detection, operation count validation, and visual debugging, all while generating detailed logs for analysis.
 
 ### Key Features
 - ✅ **Memory Leak Detection**: Uses **Valgrind** to identify memory issues (if installed).
