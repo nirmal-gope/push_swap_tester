@@ -68,7 +68,8 @@ ITER_TEST100=1
 ITER_TEST500=1
 
 PUSH_SWAP="../push_swap"
-CHECKER="./checker"
+CHECKER_LINUX="./checker_linux"  
+CHECKER_NG="./checker_ng"       
 VISUALIZER="./visualizer.py"
 
 ERROR_LOG_DIR="error_logs"
@@ -123,7 +124,10 @@ parse_options() {
 }
 
 create_error_log_dir() {
-    [ ! -d "$ERROR_LOG_DIR" ] && mkdir "$ERROR_LOG_DIR"
+    if [ ! -d "$ERROR_LOG_DIR" ]; then
+        mkdir "$ERROR_LOG_DIR" || { log_echo "${RED}❌ Failed to create $ERROR_LOG_DIR${RESET}"; exit 1; }
+    fi
+    rm -f "$ERROR_LOG_DIR"/* 2>/dev/null || log_echo "${CYAN}No previous error logs to delete${RESET}"
 }
 
 handle_error_case() {
@@ -133,9 +137,9 @@ handle_error_case() {
     log_echo "${BLUE}Sorting Instructions:${RESET} (none)"
     log_echo "Number of Operations: 0"
     if [ "$stderr_output" = "Error" ]; then
-        log_echo "${GREEN}✅ Passed: Correctly handled $msg with 'Error\\\n'${RESET}"
+        log_echo "${GREEN}✅ Passed: Correctly handled $msg with 'Error'${RESET}"
     else
-        log_echo "${RED}❌ Failed: Expected 'Error\\n' on stderr for $msg, got: '$stderr_output'${RESET}"
+        log_echo "${RED}❌ Failed: Expected 'Error' on stderr for $msg, got: '$stderr_output'${RESET}"
         ((FAILED_TESTS++))
     fi
 }
@@ -184,7 +188,7 @@ run_random_test() {
     local stderr_content=$(cat stderr_output.txt)
 
     if [ "$val_ret" -ne 0 ] && [ "$stderr_content" != "Error" ]; then
-        log_echo "${RED}❌ push_swap crashed (exit $val_ret), expected 'Error\\n':${RESET} $stderr_content"
+        log_echo "${RED}❌ push_swap crashed (exit $val_ret), expected 'Error':${RESET} $stderr_content"
         echo "Crash Output: $stderr_content" > "$ERROR_LOG_DIR/crash_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
         [ -f valgrind_output.txt ] && mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
@@ -193,7 +197,7 @@ run_random_test() {
     fi
 
     if [ "$stderr_content" = "Error" ]; then
-        log_echo "${RED}❌ Unexpected error for valid input:${RESET} $stderr_content"
+        log_echo "${RED}❌ Unexpected error for valid input: '$stderr_content'${RESET}"
         echo "Unexpected Error: $stderr_content" > "$ERROR_LOG_DIR/error_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
         rm -f stdout_output.txt stderr_output.txt
@@ -315,7 +319,7 @@ run_specific_test() {
             rm -f stdout_output.txt stderr_output.txt valgrind_output.txt
             return
         else
-            log_echo "${RED}❌ Failed: Expected 'Error\\n' on stderr for $description${RESET}"
+            log_echo "${RED}❌ Failed: Expected 'Error' on stderr for $description${RESET}"
             log_echo "${BLUE}Stdout:${RESET} $stdout_content"
             log_echo "${BLUE}Stderr:${RESET} $stderr_content"
             echo "Failed Error Expectation - Stdout: $stdout_content, Stderr: $stderr_content" > "$ERROR_LOG_DIR/error_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
@@ -343,7 +347,7 @@ run_specific_test() {
     fi
 
     local checker_out
-    checker_out=$(echo "$stdout_content" | "$CHECKER" "$test_case" 2>/dev/null | tail -n 1)
+    checker_out=$(echo "$stdout_content" | "$CHECKER" "$ARG" 2>/dev/null | tail -n 1)
     [ -z "$checker_out" ] && checker_out="OK"
     if [ "$checker_out" != "OK" ]; then
         log_echo "${RED}❌ Incorrect sorting: $checker_out${RESET}"
@@ -411,12 +415,19 @@ calculate_average() {
 log_echo "$BANNER"
 parse_options "$@"
 
-if [ ! -x "$PUSH_SWAP" ]; then
-    log_echo "${RED}❌ $PUSH_SWAP not found or not executable.${RESET}"
+if [ -f "$CHECKER_LINUX" ] && [ -x "$CHECKER_LINUX" ]; then
+    CHECKER="$CHECKER_LINUX"
+    log_echo "${GREEN}Using checker_linux as checker program${RESET}"
+elif [ -f "$CHECKER_NG" ] && [ -x "$CHECKER_NG" ]; then
+    CHECKER="$CHECKER_NG"
+    log_echo "${CYAN}checker_linux not available or not executable, falling back to checker_ng${RESET}"
+else
+    log_echo "${RED}❌ Neither checker_linux nor checker_ng found or executable in tester folder${RESET}"
     exit 1
 fi
-if [ ! -x "$CHECKER" ]; then
-    log_echo "${RED}❌ $CHECKER not found or not executable. Compile your bonus checker.${RESET}"
+
+if [ ! -x "$PUSH_SWAP" ]; then
+    log_echo "${RED}❌ $PUSH_SWAP not found or not executable.${RESET}"
     exit 1
 fi
 if [ "$VISUALIZE" -eq 1 ] && [ ! -f "$VISUALIZER" ]; then

@@ -8,7 +8,7 @@ This tool automates testing for the `push_swap` project, ensuring your program m
 
 ### Key Features
 - ✅ **Memory Leak Detection**: Uses **Valgrind** to identify memory issues (if installed).
-- ✅ **Sorting Verification**: Confirms correctness with `checker_linux`.
+- ✅ **Sorting Verification**: Confirms correctness with `checker_linux` and `checker_ng`.
 - ✅ **Operation Limits**: Validates move counts (e.g., ≤ 700 for 100 numbers, ≤ 5500 for 500).
 - ✅ **Edge Case Testing**: Handles duplicates, invalid inputs, and empty arguments.
 - ✅ **Visualization**: Includes [`visualizer.py`](./visualizer.py) to animate sorting steps.
@@ -39,7 +39,7 @@ Follow these steps to get started with the tester in your `push_swap` project di
 
 3. **Set Executable Permissions**:
    ```bash
-   chmod +x checker checker.sh visualizer.py
+   chmod +x checker_linux checker_ng checker.sh visualizer.py
    ```
 
 4. **Verify Setup**: Ensure `push_swap` is compiled and located at `../push_swap`. The tester assumes this path by default.
@@ -148,14 +148,10 @@ sudo apt-get install valgrind  # On Debian/Ubuntu
 ## 📝 Requirements
 
 - **`push_swap`**: Must be in the parent directory (`../push_swap`) and executable.
-- **Linux Environment**: Uses `checker` (included) for sorting verification.
+- **Linux Environment**: Uses `checker_ng` or `checker_linux` (included) for sorting verification.
 - **Python 3**: Required for visualization (optional).
 
 ---
-
-## 🌟 Contributing
-
-Feel free to fork this repository, submit issues, or create pull requests to enhance the tester. Contributions are welcome!
 
 ### Author
 - **Nirmal Gope**
