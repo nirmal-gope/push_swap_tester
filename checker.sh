@@ -64,12 +64,12 @@ ${RESET}
 
 LIMIT_TEST100=700
 LIMIT_TEST500=5500
-ITER_TEST100=1
-ITER_TEST500=1
+ITER_TEST100=5
+ITER_TEST500=5
 
 PUSH_SWAP="../push_swap"
-CHECKER_LINUX="./checker_linux"  
-CHECKER_NG="./checker_ng"       
+CHECKER_LINUX="./checker_linux"
+CHECKER_NG="./checker_ng"
 VISUALIZER="./visualizer.py"
 
 ERROR_LOG_DIR="error_logs"
