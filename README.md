@@ -121,13 +121,47 @@ Custom Delay:
 **Error Logs**: The `error_logs/` directory stores detailed reports for failed tests (e.g., crashes, incorrect sorting).
 
 ### Example Output
+
 ```
+Using checker_linux as checker program
+Valgrind detected, running with memory checks.
+Verbose mode ON
+Visualizer mode OFF
 ----------------------------------------
 Running test100 (1 iteration, limit=700)...
-Specific Test 1: Test100 Iteration 1
-Original Numbers: -396 -166 -3 ...
-Number of Operations: 547
-✅ Passed: 547 ≤ 700
+Number of Operations: 542
+✅ Passed: 542 ≤ 700
+----------------------------------------
+Running test500 (1 iteration, limit=5500)...
+Number of Operations: 4412
+✅ Passed: 4412 ≤ 5500
+----------------------------------------
+Running Edge Case Tests...
+Already Sorted: ✅ Passed (0 operations)
+Reverse Sorted: ✅ Passed (8 operations)
+Single Number: ✅ Passed (0 operations)
+Two Numbers: ✅ Passed (1 operation)
+Overflow: ✅ Passed (Error detected)
+Underflow: ✅ Passed (Error detected)
+----------------------------------------
+Running Duplicate Tests...
+Duplicates: ✅ Passed (Error detected)
+All Same: ✅ Passed (Error detected)
+----------------------------------------
+Running Predefined Specific Tests...
+Predefined Test 1: ✅ Passed (14 operations)
+Predefined Test 2: ✅ Passed (9 operations)
+Predefined Test 3: ✅ Passed (0 operations)
+Predefined Test 4: ✅ Passed (2 operations)
+Predefined Test 5: ✅ Passed (Silent exit for no input)
+Predefined Test 6: ✅ Passed (1 operation)
+Predefined Test 7: ✅ Passed (Error detected)
+Predefined Test 8: ✅ Passed (Error detected)
+Predefined Test 9: ✅ Passed (10 operations)
+----------------------------------------
+Test Summary:
+Total Failed Tests: 0
+✅ All tests passed!
 ```
 
 ---
