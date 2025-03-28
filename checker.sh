@@ -8,6 +8,7 @@
 # Handles:                                                                   #
 # - No args: silent exit with prompt returned.                               #
 # - Errors (non-integers, overflow, duplicates): "Error\n" on stderr.        #
+# - Memory leaks: Automatically detected and flagged as failures.            #
 # Usage:                                                                     #
 #   ./checker.sh test100                # 100 random numbers                 #
 #   ./checker.sh test500                # 500 random numbers                 #
@@ -168,6 +169,27 @@ has_duplicates() {
     [ "$count" -gt 0 ]
 }
 
+check_memory_leaks() {
+    local test_type="$1"
+    local size_or_iter="$2"
+    local iteration="$3"
+    if [ -f valgrind_output.txt ] && [ "$USE_VALGRIND" -eq 1 ]; then
+        leaks=$(grep -E "definitely lost: [1-9]|[1-9][0-9]* bytes|still reachable: [1-9]|[1-9][0-9]* bytes" valgrind_output.txt)
+        if [ -n "$leaks" ]; then
+            log_echo "${RED}❌ Memory leak detected:${RESET}"
+            cat valgrind_output.txt >> "$LOG_FILE"
+            mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_${test_type}_${size_or_iter}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
+            ((FAILED_TESTS++))
+            return 1
+        else
+            mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_${test_type}_${size_or_iter}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
+            log_echo "${GREEN}✅ No memory leaks detected${RESET}"
+            return 0
+        fi
+    fi
+    return 0
+}
+
 run_random_test() {
     local size=$1
     local limit=$2
@@ -191,20 +213,18 @@ run_random_test() {
         log_echo "${RED}❌ push_swap crashed (exit $val_ret), expected 'Error':${RESET} $stderr_content"
         echo "Crash Output: $stderr_content" > "$ERROR_LOG_DIR/crash_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
-        [ -f valgrind_output.txt ] && mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
+        check_memory_leaks "random" "$size" "$iteration"
         rm -f stdout_output.txt stderr_output.txt
         return
     fi
-
     if [ "$stderr_content" = "Error" ]; then
         log_echo "${RED}❌ Unexpected error for valid input: '$stderr_content'${RESET}"
         echo "Unexpected Error: $stderr_content" > "$ERROR_LOG_DIR/error_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
+        check_memory_leaks "random" "$size" "$iteration"
         rm -f stdout_output.txt stderr_output.txt
-        [ -f valgrind_output.txt ] && rm -f valgrind_output.txt
         return
     fi
-
     if [ "$VERBOSE" -eq 1 ]; then
         log_echo "${BLUE}Sorting Instructions:${RESET}"
         local ops_side_by_side=$(echo "$stdout_content" | tr '\n' ' ')
@@ -218,8 +238,8 @@ run_random_test() {
         log_echo "${RED}❌ Incorrect sorting: $checker_out${RESET}"
         echo "Incorrect Sorting Output: $checker_out" > "$ERROR_LOG_DIR/sorting_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
+        check_memory_leaks "random" "$size" "$iteration"
         rm -f stdout_output.txt stderr_output.txt
-        [ -f valgrind_output.txt ] && rm -f valgrind_output.txt
         return
     fi
 
@@ -234,13 +254,12 @@ run_random_test() {
         echo "Operation Count Exceeded: $op_count > $limit" > "$ERROR_LOG_DIR/count_random_${size}_iter${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
     fi
-
+    check_memory_leaks "random" "$size" "$iteration"
     if [ "$VISUALIZE" -eq 1 ]; then
         log_echo "${BLUE}Launching visualizer...${RESET}"
-        python3 "$VISUALIZER" $ARG
+        python3 "$VISUALIZER" "$ARG"
     fi
     rm -f stdout_output.txt stderr_output.txt
-    [ -f valgrind_output.txt ] && rm -f valgrind_output.txt
 }
 
 run_test100() {
@@ -292,7 +311,8 @@ run_specific_test() {
             log_echo "${BLUE}Sorting Instructions:${RESET} (none)"
             log_echo "Number of Operations: 0"
             log_echo "${GREEN}✅ Passed: Silent exit for no input${RESET}"
-            rm -f stdout_output.txt stderr_output.txt valgrind_output.txt
+            check_memory_leaks "specific" "$iteration" "$iteration"
+            rm -f stdout_output.txt stderr_output.txt
             return
         else
             log_echo "${RED}❌ Failed: Expected silent exit for no input${RESET}"
@@ -300,7 +320,7 @@ run_specific_test() {
             log_echo "${BLUE}Stderr:${RESET} $stderr_content"
             echo "Failed Silent Exit - Stdout: $stdout_content, Stderr: $stderr_content" > "$ERROR_LOG_DIR/error_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
             ((FAILED_TESTS++))
-            [ -f valgrind_output.txt ] && mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
+            check_memory_leaks "specific" "$iteration" "$iteration"
             rm -f stdout_output.txt stderr_output.txt
             return
         fi
@@ -316,7 +336,8 @@ run_specific_test() {
     if [ "$should_error" -eq 1 ]; then
         if [ "$stderr_content" = "Error" ] && [ "$val_ret" -ne 0 ] && [ -z "$stdout_content" ]; then
             handle_error_case "$description" "$stderr_content"
-            rm -f stdout_output.txt stderr_output.txt valgrind_output.txt
+            check_memory_leaks "specific" "$iteration" "$iteration"
+            rm -f stdout_output.txt stderr_output.txt
             return
         else
             log_echo "${RED}❌ Failed: Expected 'Error' on stderr for $description${RESET}"
@@ -324,7 +345,7 @@ run_specific_test() {
             log_echo "${BLUE}Stderr:${RESET} $stderr_content"
             echo "Failed Error Expectation - Stdout: $stdout_content, Stderr: $stderr_content" > "$ERROR_LOG_DIR/error_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
             ((FAILED_TESTS++))
-            [ -f valgrind_output.txt ] && mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
+            check_memory_leaks "specific" "$iteration" "$iteration"
             rm -f stdout_output.txt stderr_output.txt
             return
         fi
@@ -336,7 +357,7 @@ run_specific_test() {
         log_echo "${BLUE}Stderr:${RESET} $stderr_content"
         echo "Crash Output: $stderr_content" > "$ERROR_LOG_DIR/crash_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
-        [ -f valgrind_output.txt ] && mv valgrind_output.txt "$ERROR_LOG_DIR/valgrind_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
+        check_memory_leaks "specific" "$iteration" "$iteration"
         rm -f stdout_output.txt stderr_output.txt
         return
     fi
@@ -347,14 +368,14 @@ run_specific_test() {
     fi
 
     local checker_out
-    checker_out=$(echo "$stdout_content" | "$CHECKER" "$ARG" 2>/dev/null | tail -n 1)
+    checker_out=$(echo "$stdout_content" | "$CHECKER" "$test_case" 2>/dev/null | tail -n 1)
     [ -z "$checker_out" ] && checker_out="OK"
     if [ "$checker_out" != "OK" ]; then
         log_echo "${RED}❌ Incorrect sorting: $checker_out${RESET}"
         echo "Incorrect Sorting Output: $checker_out" > "$ERROR_LOG_DIR/sorting_specific_${iteration}_$(date +%Y%m%d%H%M%S).txt"
         ((FAILED_TESTS++))
+        check_memory_leaks "specific" "$iteration" "$iteration"
         rm -f stdout_output.txt stderr_output.txt
-        [ -f valgrind_output.txt ] && rm -f valgrind_output.txt
         return
     fi
 
@@ -362,13 +383,12 @@ run_specific_test() {
     op_count=$(echo "$stdout_content" | grep -v '^$' | wc -l)
     log_echo "Number of Operations: $op_count"
     log_echo "${GREEN}✅ Passed${RESET}"
-
+    check_memory_leaks "specific" "$iteration" "$iteration"
     if [ "$VISUALIZE" -eq 1 ]; then
         log_echo "${BLUE}Launching visualizer...${RESET}"
-        python3 "$VISUALIZER" $test_case
+        python3 "$VISUALIZER" "$test_case"
     fi
     rm -f stdout_output.txt stderr_output.txt
-    [ -f valgrind_output.txt ] && rm -f valgrind_output.txt
 }
 
 run_specific_tests() {
@@ -467,11 +487,11 @@ log_echo "Test Summary:"
 log_echo "Total Failed Tests: $FAILED_TESTS"
 if [ ${#OP_COUNTS_100[@]} -gt 0 ]; then
     avg_100=$(calculate_average "${OP_COUNTS_100[@]}")
-    log_echo "Number of Operations (Test100): $avg_100"
+    log_echo "Average Number of Operations (Test100): $avg_100"
 fi
 if [ ${#OP_COUNTS_500[@]} -gt 0 ]; then
     avg_500=$(calculate_average "${OP_COUNTS_500[@]}")
-    log_echo "Number of Operations (Test500): $avg_500"
+    log_echo "Average Number of Operations (Test500): $avg_500"
 fi
 if [ "$FAILED_TESTS" -gt 0 ]; then
     log_echo "${RED}❌ Check logs:${RESET}"
@@ -480,5 +500,6 @@ if [ "$FAILED_TESTS" -gt 0 ]; then
 else
     log_echo "${GREEN}✅ All tests passed!${RESET}"
     log_echo "Log file: file://$(realpath "$LOG_FILE")"
+    log_echo "Error logs directory: file://$(realpath "$ERROR_LOG_DIR")"
 fi
 log_echo "----------------------------------------"
