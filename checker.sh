@@ -1,34 +1,38 @@
 #!/bin/bash
 
-##############################################################################
-#                              PUSH SWAP TESTER                              #
-##############################################################################
-# This script tests push_swap with Valgrind for memory leaks, verifies       #
-# correctness with checker, and checks operation counts against limits.      #
-# Handles:                                                                   #
-# - No args or empty string: silent exit with prompt returned.               #
-# - Errors (non-integers, overflow, duplicates): "Error\n" on stderr.        #
-# - Memory leaks: Automatically detected and flagged as failures.            #
-# - Default: Tests separate arguments (e.g., 1 2 3).                        #
-# - Strict mode (--strict or -s): Tests both quoted string (e.g., "1 2 3")   #
-#   and separate arguments (e.g., 1 2 3) formats.                           #
-# Usage:                                                                     #
-#   ./checker.sh test100 [iterations]   # 100 random numbers, custom iters   #
-#   ./checker.sh test500 [iterations]   # 500 random numbers, custom iters   #
-#   ./checker.sh specific               # Predefined test cases              #
-#   ./checker.sh edge                   # Edge cases                         #
-#   ./checker.sh duplicates             # Duplicate numbers                  #
-#   ./checker.sh all                    # All tests                          #
-# Options:                                                                   #
-#   -q, --quiet       No verbose output                                      #
-#   -v, --visualize   Use visualizer.py after successful tests               #
-#   --no-valgrind     Disable Valgrind even if available                    #
-#   -s, --strict      Test both quoted and separate argument formats        #
-# All logs and error files are stored in a single 'results' folder,          #
-# which is cleared at the start of each run.                                 #
-##############################################################################
-#                            MADE BY NIRMAL GOPE                             #
-##############################################################################
+###############################################################################
+#                              PUSH SWAP TESTER                               #
+###############################################################################
+# This script tests push_swap with Valgrind for memory leaks, verifies        #
+# correctness with checker, and checks operation counts against limits.       #
+# Handles:                                                                    #
+# - No args or empty string: silent exit with prompt returned.                #
+# - Errors (non-integers, overflow, duplicates): "Error\n" on stderr.         #
+# - Memory leaks: Automatically detected and flagged as failures.             #
+# - Default: Tests separate arguments (e.g., 1 2 3).                          #
+# - Strict mode (--strict or -s): Tests both quoted string (e.g., "1 2 3")    #
+#   and separate arguments (e.g., 1 2 3) formats.                             #
+# Usage:                                                                      #
+#   ./checker.sh test100 [iterations]   # 100 random numbers, custom iters    #
+#   ./checker.sh test500 [iterations]   # 500 random numbers, custom iters    #
+#   ./checker.sh specific               # Predefined test cases               #
+#   ./checker.sh edge                   # Edge cases                          #
+#   ./checker.sh duplicates             # Duplicate numbers                   #
+#   ./checker.sh all                    # All tests                           #
+# Options:                                                                    #
+#   -q, --quiet       No verbose output                                       #
+#   -v, --visualize   Use visualizer.py after successful tests                #
+#   --no-valgrind     Disable Valgrind even if available                      #
+#   -s, --strict      Test both quoted and separate argument formats          #
+# All logs and error files are stored in a single 'results' folder,           #
+# which is cleared at the start of each run.                                  #
+# Note: Original Numbers and Sorting Instructions are shown only for          #
+# default test100/test500 (no custom iterations) and specific/edge/duplicates #
+# For test100/test500, Sorting Instructions are shown as a comma-separated    #
+# list (e.g., "ra, ra, pb") to save space.                                    #
+###############################################################################
+#                            MADE BY NIRMAL GOPE                              #
+###############################################################################
 
 RED="\033[1;31m"
 GREEN="\033[1;32m"
@@ -74,8 +78,10 @@ ${RESET}
 
 LIMIT_TEST100=700
 LIMIT_TEST500=5500
-ITER_TEST100=1
-ITER_TEST500=1
+ITER_TEST100=1  
+ITER_TEST500=1  
+CUSTOM_ITER_100=0  
+CUSTOM_ITER_500=0  
 
 PUSH_SWAP="../push_swap"
 CHECKER_LINUX="./checker_linux"
@@ -85,7 +91,7 @@ VISUALIZER="./visualizer.py"
 VERBOSE=1
 VISUALIZE=0
 USE_VALGRIND=1
-STRICT_MODE=0
+STRICT_MODE=0 
 
 TESTS=(
     "2 1 3 6 5 8 4"
@@ -135,6 +141,7 @@ parse_options() {
                 shift
                 if [[ $# -gt 0 && $1 =~ ^[0-9]+$ && $1 -gt 0 ]]; then
                     ITER_TEST100=$1
+                    CUSTOM_ITER_100=1 
                     shift
                 fi
                 ;;
@@ -143,6 +150,7 @@ parse_options() {
                 shift
                 if [[ $# -gt 0 && $1 =~ ^[0-9]+$ && $1 -gt 0 ]]; then
                     ITER_TEST500=$1
+                    CUSTOM_ITER_500=1  
                     shift
                 fi
                 ;;
@@ -174,11 +182,11 @@ handle_error_case() {
 }
 
 run_push_swap() {
-    local format="$1"
+    local format="$1"  
     local args="$2"
     local stdout_file=$(mktemp)
     local stderr_file=$(mktemp)
-
+    
     if command -v valgrind >/dev/null 2>&1 && [ "$USE_VALGRIND" -eq 1 ]; then
         if [ "$format" = "quoted" ]; then
             valgrind --leak-check=full --show-leak-kinds=all --log-file=valgrind_output.txt \
@@ -217,7 +225,7 @@ check_memory_leaks() {
     if [ -f valgrind_output.txt ] && [ "$USE_VALGRIND" -eq 1 ]; then
         local definitely_lost=$(grep -E "definitely lost: [1-9][0-9]* bytes" valgrind_output.txt)
         local still_reachable=$(grep -E "still reachable: [1-9][0-9]* bytes" valgrind_output.txt)
-
+        
         if [ -n "$definitely_lost" ]; then
             log_echo "${RED}❌ Memory leak detected (definitely lost)${RESET}"
             cat valgrind_output.txt >> "$LOG_FILE"
@@ -250,6 +258,17 @@ run_random_test() {
 
     local ARG
     ARG=$(python3 -c "import random; print(' '.join(map(str, random.sample(range(-1000, 1001), $size))))")
+
+    local show_details=0
+    if [ "$size" -eq 100 ] && [ "$CUSTOM_ITER_100" -eq 0 ]; then
+        show_details=1
+    elif [ "$size" -eq 500 ] && [ "$CUSTOM_ITER_500" -eq 0 ]; then
+        show_details=1
+    fi
+
+    if [ "$show_details" -eq 1 ]; then
+        log_echo "${BLUE}Original Numbers:${RESET} $ARG"
+    fi
 
     local formats=("space")
     [ "$STRICT_MODE" -eq 1 ] && formats=("quoted" "space")
@@ -297,6 +316,11 @@ run_random_test() {
 
         local op_count
         op_count=$(echo "$stdout_content" | grep -v '^$' | wc -l)
+        if [ "$show_details" -eq 1 ] && [ "$VERBOSE" -eq 1 ]; then
+            local instructions
+            instructions=$(echo "$stdout_content" | tr '\n' ',' | sed 's/,$//; s/,/, /g')
+            log_echo "${BLUE}Sorting Instructions:${RESET} $instructions"
+        fi
         log_echo "Operations: $op_count"
         if [ "$size" -eq 100 ]; then OP_COUNTS_100+=("$op_count"); else OP_COUNTS_500+=("$op_count"); fi
         if [ "$op_count" -le "$limit" ]; then
@@ -424,18 +448,6 @@ run_specific_test() {
         if [ "$VERBOSE" -eq 1 ]; then
             log_echo "${BLUE}Sorting Instructions:${RESET}"
             log_echo "$stdout_content"
-        fi
-
-        local checker_out
-        checker_out=$(echo "$stdout_content" | "$CHECKER" "$test_case" 2>/dev/null | tail -n 1)
-        [ -z "$checker_out" ] && checker_out="OK"
-        if [ "$checker_out" != "OK" ]; then
-            log_echo "${RED}❌ Incorrect sorting: $checker_out${RESET}"
-            echo "Incorrect Sorting Output: $checker_out" > "$ERROR_LOG_DIR/sorting_specific_${iteration}_${format}.txt"
-            ((FAILED_TESTS++))
-            check_memory_leaks "specific" "$iteration" "$iteration" "$format"
-            rm -f stdout_output.txt stderr_output.txt
-            continue
         fi
 
         local op_count

@@ -165,4 +165,4 @@ All output files are stored in a single `results` folder, cleared at the start o
 
 ## Author
 **Nirmal Gope**
-GitHub: [nirmal-gope](https://github.com/nirmal-gope)
+- GitHub: [nirmal-gope](https://github.com/nirmal-gope)
