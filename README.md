@@ -163,6 +163,14 @@ All output files are stored in a single `results` folder, cleared at the start o
 
 ---
 
+## Demo
+
+Watch the Push Swap tester in action on YouTube:
+
+[▶️ Push Swap Tutorial](https://youtu.be/4dMsuxfqufg)
+
+---
+
 ## Author
 **Nirmal Gope**
 - GitHub: [nirmal-gope](https://github.com/nirmal-gope)
